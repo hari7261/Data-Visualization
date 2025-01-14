@@ -1,5 +1,5 @@
 import tkinter as tk
-from tkinter import filedialog
+from tkinter import filedialog, ttk
 from customtkinter import CTk, CTkEntry, CTkButton, CTkLabel, CTkOptionMenu, CTkCheckBox
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
@@ -21,6 +21,8 @@ class ModernDataVisualizationApp:
         self.data = []
         self.df = None  # For imported data
         self.columns = []  # Columns in the dataset
+        self.numerical_columns = []  # Numerical columns for calculations
+        self.categorical_columns = []  # Categorical columns for grouping
 
         # Sidebar for controls
         self.sidebar = tk.Frame(root, width=200, bg="#2E3440")
@@ -74,6 +76,10 @@ class ModernDataVisualizationApp:
 
         self.ml_option = CTkOptionMenu(self.sidebar, values=["None", "Trend Line", "Clustering"])
         self.ml_option.grid(row=11, column=0, padx=10, pady=10)
+
+        # Frame for overall calculations
+        self.calculation_frame = tk.Frame(self.main_content, bg="#4C566A")
+        self.calculation_frame.pack(side=tk.TOP, fill=tk.X, padx=10, pady=10)
 
         # Matplotlib figure for graph
         self.fig, self.ax = plt.subplots(figsize=(10, 6))
@@ -170,7 +176,32 @@ class ModernDataVisualizationApp:
             self.columns = self.df.columns.tolist()
             self.column_option.configure(values=self.columns)
             self.column_option.set(self.columns[0])  # Set default column
-            print(self.df)  # Print the dataset to verify
+
+            # Detect numerical and categorical columns
+            self.numerical_columns = self.df.select_dtypes(include=[np.number]).columns.tolist()
+            self.categorical_columns = self.df.select_dtypes(exclude=[np.number]).columns.tolist()
+
+            # Display overall calculations
+            self.show_overall_calculations()
+
+    def show_overall_calculations(self):
+        # Clear previous calculations
+        for widget in self.calculation_frame.winfo_children():
+            widget.destroy()
+
+        # Display calculations for numerical columns
+        for col in self.numerical_columns:
+            stats = self.df[col].describe()
+            stats_text = f"{col}:\n" + "\n".join([f"{key}: {value:.2f}" for key, value in stats.items()])
+            label = CTkLabel(self.calculation_frame, text=stats_text, font=("Arial", 12))
+            label.pack(side=tk.LEFT, padx=10, pady=10)
+
+        # Display counts for categorical columns
+        for col in self.categorical_columns:
+            counts = self.df[col].value_counts()
+            counts_text = f"{col}:\n" + "\n".join([f"{key}: {value}" for key, value in counts.items()])
+            label = CTkLabel(self.calculation_frame, text=counts_text, font=("Arial", 12))
+            label.pack(side=tk.LEFT, padx=10, pady=10)
 
     def export_graph(self):
         file_path = filedialog.asksaveasfilename(defaultextension=".png", filetypes=[("PNG Files", "*.png"), ("JPEG Files", "*.jpg"), ("PDF Files", "*.pdf")])
