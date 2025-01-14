@@ -20,6 +20,7 @@ class ModernDataVisualizationApp:
         # Initialize data storage
         self.data = []
         self.df = None  # For imported data
+        self.columns = []  # Columns in the dataset
 
         # Sidebar for controls
         self.sidebar = tk.Frame(root, width=200, bg="#2E3440")
@@ -44,28 +45,35 @@ class ModernDataVisualizationApp:
         self.chart_type = CTkOptionMenu(self.sidebar, values=["Line Graph", "Bar Chart", "Pie Chart", "Scatter Plot", "Histogram", "Area Chart"])
         self.chart_type.grid(row=3, column=0, padx=10, pady=10)
 
+        # Dropdown for column selection
+        self.column_label = CTkLabel(self.sidebar, text="Select Column:", font=("Arial", 12))
+        self.column_label.grid(row=4, column=0, padx=10, pady=10)
+
+        self.column_option = CTkOptionMenu(self.sidebar, values=[])
+        self.column_option.grid(row=5, column=0, padx=10, pady=10)
+
         # Button to update visualization
         self.update_button = CTkButton(self.sidebar, text="Update Visualization", command=self.update_visualization)
-        self.update_button.grid(row=4, column=0, padx=10, pady=10)
+        self.update_button.grid(row=6, column=0, padx=10, pady=10)
 
         # Import/Export buttons
         self.import_button = CTkButton(self.sidebar, text="Import Data", command=self.import_data)
-        self.import_button.grid(row=5, column=0, padx=10, pady=10)
+        self.import_button.grid(row=7, column=0, padx=10, pady=10)
 
         self.export_button = CTkButton(self.sidebar, text="Export Graph", command=self.export_graph)
-        self.export_button.grid(row=6, column=0, padx=10, pady=10)
+        self.export_button.grid(row=8, column=0, padx=10, pady=10)
 
         # Real-time data streaming
         self.streaming_var = tk.BooleanVar()
         self.streaming_check = CTkCheckBox(self.sidebar, text="Enable Real-Time Streaming", variable=self.streaming_var)
-        self.streaming_check.grid(row=7, column=0, padx=10, pady=10)
+        self.streaming_check.grid(row=9, column=0, padx=10, pady=10)
 
         # Machine Learning options
         self.ml_label = CTkLabel(self.sidebar, text="Machine Learning:", font=("Arial", 12))
-        self.ml_label.grid(row=8, column=0, padx=10, pady=10)
+        self.ml_label.grid(row=10, column=0, padx=10, pady=10)
 
         self.ml_option = CTkOptionMenu(self.sidebar, values=["None", "Trend Line", "Clustering"])
-        self.ml_option.grid(row=9, column=0, padx=10, pady=10)
+        self.ml_option.grid(row=11, column=0, padx=10, pady=10)
 
         # Matplotlib figure for graph
         self.fig, self.ax = plt.subplots(figsize=(10, 6))
@@ -83,14 +91,16 @@ class ModernDataVisualizationApp:
         self.streaming_thread.start()
 
     def update_visualization(self):
-        # Get input data
-        input_data = self.input_entry.get().strip()
-        if input_data:
-            try:
-                self.data = [float(x) for x in input_data.split(",")]
-            except ValueError:
-                print("Invalid input. Please enter comma-separated numbers.")
-                return
+        if self.df is None:
+            return
+
+        # Get selected column
+        selected_column = self.column_option.get()
+        if selected_column not in self.df.columns:
+            return
+
+        # Get data for the selected column
+        self.data = self.df[selected_column].tolist()
 
         # Clear previous plot
         self.ax.clear()
@@ -101,33 +111,33 @@ class ModernDataVisualizationApp:
         # Plot based on selected chart type
         if chart_type == "Line Graph":
             self.ax.plot(self.data, marker='o', color='b')
-            self.ax.set_title("Line Graph")
+            self.ax.set_title(f"Line Graph ({selected_column})")
             self.ax.set_xlabel("Index")
-            self.ax.set_ylabel("Value")
+            self.ax.set_ylabel(selected_column)
         elif chart_type == "Bar Chart":
             self.ax.bar(range(len(self.data)), self.data, color='g')
-            self.ax.set_title("Bar Chart")
+            self.ax.set_title(f"Bar Chart ({selected_column})")
             self.ax.set_xlabel("Index")
-            self.ax.set_ylabel("Value")
+            self.ax.set_ylabel(selected_column)
         elif chart_type == "Pie Chart":
             labels = [f"Data {i+1}" for i in range(len(self.data))]
             self.ax.pie(self.data, labels=labels, autopct='%1.1f%%', startangle=90, colors=plt.cm.tab20.colors)
-            self.ax.set_title("Pie Chart")
+            self.ax.set_title(f"Pie Chart ({selected_column})")
         elif chart_type == "Scatter Plot":
             self.ax.scatter(range(len(self.data)), self.data, color='r')
-            self.ax.set_title("Scatter Plot")
+            self.ax.set_title(f"Scatter Plot ({selected_column})")
             self.ax.set_xlabel("Index")
-            self.ax.set_ylabel("Value")
+            self.ax.set_ylabel(selected_column)
         elif chart_type == "Histogram":
             self.ax.hist(self.data, bins=10, color='purple', edgecolor='black')
-            self.ax.set_title("Histogram")
-            self.ax.set_xlabel("Value")
+            self.ax.set_title(f"Histogram ({selected_column})")
+            self.ax.set_xlabel(selected_column)
             self.ax.set_ylabel("Frequency")
         elif chart_type == "Area Chart":
             self.ax.fill_between(range(len(self.data)), self.data, color='orange', alpha=0.4)
-            self.ax.set_title("Area Chart")
+            self.ax.set_title(f"Area Chart ({selected_column})")
             self.ax.set_xlabel("Index")
-            self.ax.set_ylabel("Value")
+            self.ax.set_ylabel(selected_column)
 
         # Apply Machine Learning
         self.apply_machine_learning()
@@ -154,16 +164,13 @@ class ModernDataVisualizationApp:
             self.ax.set_title("Clustering")
 
     def import_data(self):
-        file_path = filedialog.askopenfilename(filetypes=[("CSV Files", "*.csv"), ("Excel Files", "*.xlsx"), ("JSON Files", "*.json")])
+        file_path = filedialog.askopenfilename(filetypes=[("CSV Files", "*.csv")])
         if file_path:
-            if file_path.endswith(".csv"):
-                self.df = pd.read_csv(file_path)
-            elif file_path.endswith(".xlsx"):
-                self.df = pd.read_excel(file_path)
-            elif file_path.endswith(".json"):
-                self.df = pd.read_json(file_path)
-            self.data = self.df.iloc[:, 0].tolist()  # Use the first column for visualization
-            self.update_visualization()
+            self.df = pd.read_csv(file_path)
+            self.columns = self.df.columns.tolist()
+            self.column_option.configure(values=self.columns)
+            self.column_option.set(self.columns[0])  # Set default column
+            print(self.df)  # Print the dataset to verify
 
     def export_graph(self):
         file_path = filedialog.asksaveasfilename(defaultextension=".png", filetypes=[("PNG Files", "*.png"), ("JPEG Files", "*.jpg"), ("PDF Files", "*.pdf")])
