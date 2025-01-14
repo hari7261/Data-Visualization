@@ -1,6 +1,6 @@
 import tkinter as tk
 from tkinter import filedialog
-from customtkinter import CTk, CTkEntry, CTkButton, CTkLabel, CTkOptionMenu, CTkCheckBox, CTkComboBox, CTkSlider
+from customtkinter import CTk, CTkEntry, CTkButton, CTkLabel, CTkOptionMenu, CTkCheckBox
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
 import pandas as pd
@@ -23,12 +23,12 @@ class ModernDataVisualizationApp:
 
         # Sidebar for controls
         self.sidebar = tk.Frame(root, width=200, bg="#2E3440")
-        self.sidebar.grid(row=0, column=0, rowspan=10, sticky="ns")
-        self.sidebar.grid_propagate(False)
+        self.sidebar.pack(side=tk.LEFT, fill=tk.Y)
+        self.sidebar.pack_propagate(False)
 
         # Main content area
         self.main_content = tk.Frame(root, bg="#3B4252")
-        self.main_content.grid(row=0, column=1, rowspan=10, sticky="nsew")
+        self.main_content.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True)
 
         # Input field for data
         self.input_label = CTkLabel(self.sidebar, text="Enter Data (comma-separated):", font=("Arial", 12))
@@ -70,12 +70,13 @@ class ModernDataVisualizationApp:
         # Matplotlib figure for graph
         self.fig, self.ax = plt.subplots(figsize=(10, 6))
         self.canvas = FigureCanvasTkAgg(self.fig, master=self.main_content)
-        self.canvas.get_tk_widget().grid(row=0, column=0, padx=10, pady=10)
+        self.canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=True)
 
         # Add a toolbar for zoom/pan
-        self.toolbar = NavigationToolbar2Tk(self.canvas, self.main_content)
+        self.toolbar_frame = tk.Frame(self.main_content)
+        self.toolbar_frame.pack(side=tk.BOTTOM, fill=tk.X)
+        self.toolbar = NavigationToolbar2Tk(self.canvas, self.toolbar_frame)
         self.toolbar.update()
-        self.toolbar.grid(row=1, column=0, padx=10, pady=10)
 
         # Start real-time data streaming thread
         self.streaming_thread = threading.Thread(target=self.real_time_streaming, daemon=True)
