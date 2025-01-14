@@ -1,5 +1,5 @@
 import tkinter as tk
-from tkinter import filedialog, ttk
+from tkinter import filedialog
 from customtkinter import CTk, CTkEntry, CTkButton, CTkLabel, CTkOptionMenu, CTkCheckBox
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
@@ -106,7 +106,7 @@ class ModernDataVisualizationApp:
             return
 
         # Get data for the selected column
-        self.data = self.df[selected_column].tolist()
+        self.data = self.df[selected_column]
 
         # Clear previous plot
         self.ax.clear()
@@ -126,14 +126,24 @@ class ModernDataVisualizationApp:
             self.ax.set_xlabel("Index")
             self.ax.set_ylabel(selected_column)
         elif chart_type == "Pie Chart":
-            labels = [f"Data {i+1}" for i in range(len(self.data))]
-            self.ax.pie(self.data, labels=labels, autopct='%1.1f%%', startangle=90, colors=plt.cm.tab20.colors)
+            if self.data.dtype == "object":  # For categorical data
+                counts = self.data.value_counts()
+                self.ax.pie(counts, labels=counts.index, autopct='%1.1f%%', startangle=90, colors=plt.cm.tab20.colors)
+            else:  # For numerical data
+                self.ax.pie(self.data, labels=[f"Data {i+1}" for i in range(len(self.data))], autopct='%1.1f%%', startangle=90, colors=plt.cm.tab20.colors)
             self.ax.set_title(f"Pie Chart ({selected_column})")
         elif chart_type == "Scatter Plot":
-            self.ax.scatter(range(len(self.data)), self.data, color='r')
-            self.ax.set_title(f"Scatter Plot ({selected_column})")
-            self.ax.set_xlabel("Index")
-            self.ax.set_ylabel(selected_column)
+            if len(self.df.columns) > 1:
+                x_column = self.df.columns[0]  # Use the first column for X-axis
+                self.ax.scatter(self.df[x_column], self.data, color='r')
+                self.ax.set_title(f"Scatter Plot ({x_column} vs {selected_column})")
+                self.ax.set_xlabel(x_column)
+                self.ax.set_ylabel(selected_column)
+            else:
+                self.ax.scatter(range(len(self.data)), self.data, color='r')
+                self.ax.set_title(f"Scatter Plot ({selected_column})")
+                self.ax.set_xlabel("Index")
+                self.ax.set_ylabel(selected_column)
         elif chart_type == "Histogram":
             self.ax.hist(self.data, bins=10, color='purple', edgecolor='black')
             self.ax.set_title(f"Histogram ({selected_column})")
